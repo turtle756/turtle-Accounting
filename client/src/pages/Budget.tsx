@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { Plus, Trash2, Save, Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { format } from "date-fns";
+import { Plus, Trash2, Save, Loader2, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -9,6 +10,12 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { useToast } from "@/hooks/use-toast";
 import { useData } from "@/contexts/DataContext";
 import type { BudgetCategory, Settings } from "@shared/schema";
@@ -27,8 +34,11 @@ export default function Budget() {
   const [categories, setCategories] = useState<BudgetCategory[]>(
     settings.budgetCategories
   );
-  const [currentYear, setCurrentYear] = useState(settings.currentYear);
   const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    setCategories(settings.budgetCategories);
+  }, [settings.budgetCategories]);
 
   const totalYearlyBudget = categories.reduce((sum, c) => sum + c.yearlyBudget, 0);
 
@@ -44,7 +54,7 @@ export default function Budget() {
   const handleUpdateCategory = (
     id: string,
     field: keyof BudgetCategory,
-    value: string | number
+    value: string | number | undefined
   ) => {
     setCategories(
       categories.map((c) =>
@@ -78,7 +88,6 @@ export default function Budget() {
 
     const newSettings: Settings = {
       budgetCategories: categories,
-      currentYear,
     };
 
     updateSettings(newSettings);
@@ -117,28 +126,6 @@ export default function Budget() {
           저장
         </Button>
       </div>
-
-      {/* Year Setting */}
-      <Card>
-        <CardHeader>
-          <CardTitle>회계 연도</CardTitle>
-          <CardDescription>
-            현재 회계 연도를 설정하세요
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center gap-4">
-            <Input
-              type="number"
-              value={currentYear}
-              onChange={(e) => setCurrentYear(Number(e.target.value))}
-              className="w-32"
-              data-testid="input-year"
-            />
-            <span className="text-muted-foreground">년</span>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Budget Summary */}
       <Card>
@@ -255,6 +242,75 @@ export default function Budget() {
                           />
                         </div>
                       </div>
+                      
+                      {/* Date Range */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium flex items-center gap-2">
+                            <Calendar className="w-4 h-4" />
+                            시작일 (선택)
+                          </label>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button
+                                variant="outline"
+                                className="w-full justify-start font-normal"
+                                data-testid={`input-start-date-${category.id}`}
+                              >
+                                {category.startDate
+                                  ? format(new Date(category.startDate), "yyyy-MM-dd")
+                                  : "날짜 선택"}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <CalendarComponent
+                                mode="single"
+                                selected={category.startDate ? new Date(category.startDate) : undefined}
+                                onSelect={(date) =>
+                                  handleUpdateCategory(
+                                    category.id,
+                                    "startDate",
+                                    date ? format(date, "yyyy-MM-dd") : undefined
+                                  )
+                                }
+                              />
+                            </PopoverContent>
+                          </Popover>
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium flex items-center gap-2">
+                            <Calendar className="w-4 h-4" />
+                            종료일 (선택)
+                          </label>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button
+                                variant="outline"
+                                className="w-full justify-start font-normal"
+                                data-testid={`input-end-date-${category.id}`}
+                              >
+                                {category.endDate
+                                  ? format(new Date(category.endDate), "yyyy-MM-dd")
+                                  : "날짜 선택"}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <CalendarComponent
+                                mode="single"
+                                selected={category.endDate ? new Date(category.endDate) : undefined}
+                                onSelect={(date) =>
+                                  handleUpdateCategory(
+                                    category.id,
+                                    "endDate",
+                                    date ? format(date, "yyyy-MM-dd") : undefined
+                                  )
+                                }
+                              />
+                            </PopoverContent>
+                          </Popover>
+                        </div>
+                      </div>
+
                       <div className="flex justify-between items-center pt-2">
                         <p className="text-sm text-muted-foreground">
                           월별: {formatCurrency(category.yearlyBudget / 12)}

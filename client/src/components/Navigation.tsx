@@ -3,7 +3,8 @@ import { useState } from "react";
 import {
   LayoutDashboard,
   PlusCircle,
-  History,
+  ArrowUpRight,
+  ArrowDownRight,
   Settings,
   FileBarChart,
   Menu,
@@ -21,7 +22,8 @@ import {
 const NAV_ITEMS = [
   { path: "/", label: "대시보드", icon: LayoutDashboard },
   { path: "/input", label: "입력", icon: PlusCircle },
-  { path: "/history", label: "내역", icon: History },
+  { path: "/income", label: "수입", icon: ArrowUpRight },
+  { path: "/expense", label: "지출", icon: ArrowDownRight },
   { path: "/budget", label: "예산", icon: Wallet },
   { path: "/reports", label: "보고서", icon: FileBarChart },
 ];
@@ -143,7 +145,7 @@ export function Navigation() {
       {/* Mobile Bottom Navigation */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-background border-t z-50 safe-area-inset-bottom">
         <div className="flex items-center justify-around h-full">
-          {NAV_ITEMS.slice(0, 4).map((item) => {
+          {[NAV_ITEMS[0], NAV_ITEMS[1], NAV_ITEMS[2], NAV_ITEMS[3], NAV_ITEMS[5]].map((item) => {
             const isActive = location === item.path;
             return (
               <Link key={item.path} href={item.path} className="flex-1">

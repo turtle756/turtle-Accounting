@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "wouter";
 import {
   TrendingUp,
@@ -7,11 +7,32 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   PlusCircle,
+  Database,
+  Plus,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
 import { useData } from "@/contexts/DataContext";
 import type { MonthlySummary, YearlySummary } from "@shared/schema";
 
@@ -33,16 +54,14 @@ function SummaryCard({
   amount,
   icon: Icon,
   trend,
-  className,
 }: {
   title: string;
   amount: number;
   icon: typeof TrendingUp;
   trend?: "up" | "down";
-  className?: string;
 }) {
   return (
-    <Card className={className}>
+    <Card>
       <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
         <CardTitle className="text-sm font-medium text-muted-foreground">
           {title}
@@ -160,15 +179,16 @@ function DashboardSkeleton() {
 }
 
 export default function Dashboard() {
-  const { transactions, settings, isLoading } = useData();
+  const { transactions, settings, appConfig, currentDatabaseId, switchDatabase, createDatabase, isLoading } = useData();
+  const { toast } = useToast();
+  const [addDbOpen, setAddDbOpen] = useState(false);
+  const [newDbName, setNewDbName] = useState("");
+  const [newDbYear, setNewDbYear] = useState("");
+
+  const currentDatabase = appConfig.databases.find((db) => db.id === currentDatabaseId);
+  const displayYear = currentDatabase?.year || new Date().getFullYear();
 
   const yearlyData = useMemo((): YearlySummary => {
-    const currentYear = settings.currentYear;
-    const yearTransactions = transactions.filter((t) => {
-      const year = new Date(t.date).getFullYear();
-      return year === currentYear;
-    });
-
     const monthlyData: MonthlySummary[] = [];
     const totalBudget = settings.budgetCategories.reduce(
       (sum, c) => sum + c.yearlyBudget,
@@ -177,7 +197,7 @@ export default function Dashboard() {
     const monthlyBudget = totalBudget / 12;
 
     for (let month = 0; month < 12; month++) {
-      const monthTransactions = yearTransactions.filter((t) => {
+      const monthTransactions = transactions.filter((t) => {
         return new Date(t.date).getMonth() === month;
       });
 
@@ -210,6 +230,22 @@ export default function Dashboard() {
     };
   }, [transactions, settings]);
 
+  const handleAddDatabase = () => {
+    if (newDbYear) {
+      const year = parseInt(newDbYear);
+      if (year >= 2000 && year <= 2100) {
+        createDatabase(`${year}`, true, year);
+        toast({ title: "추가 완료", description: `${year}년 데이터베이스가 추가되었습니다` });
+      }
+    } else if (newDbName.trim()) {
+      createDatabase(newDbName.trim(), false);
+      toast({ title: "추가 완료", description: `"${newDbName}" 데이터베이스가 추가되었습니다` });
+    }
+    setAddDbOpen(false);
+    setNewDbName("");
+    setNewDbYear("");
+  };
+
   if (isLoading) {
     return (
       <div className="max-w-7xl mx-auto px-4 py-6">
@@ -222,20 +258,95 @@ export default function Dashboard() {
     <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold" data-testid="text-dashboard-title">
-            대시보드
-          </h1>
-          <p className="text-muted-foreground">
-            {settings.currentYear}년 연간 현황
-          </p>
+        <div className="flex items-center gap-4">
+          <div>
+            <h1 className="text-3xl font-bold" data-testid="text-dashboard-title">
+              대시보드
+            </h1>
+            <p className="text-muted-foreground">
+              {displayYear}년 연간 현황
+            </p>
+          </div>
         </div>
-        <Link href="/input">
-          <Button className="gap-2" data-testid="button-add-transaction">
-            <PlusCircle className="w-4 h-4" />
-            거래 추가
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Database Selector */}
+          <div className="flex items-center gap-2">
+            <Database className="w-4 h-4 text-muted-foreground" />
+            <Select value={currentDatabaseId} onValueChange={switchDatabase}>
+              <SelectTrigger className="w-36" data-testid="select-database">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {appConfig.databases.map((db) => (
+                  <SelectItem key={db.id} value={db.id}>
+                    {db.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Dialog open={addDbOpen} onOpenChange={setAddDbOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="icon" data-testid="button-add-database">
+                  <Plus className="w-4 h-4" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>데이터베이스 추가</DialogTitle>
+                  <DialogDescription>
+                    연도 데이터베이스 또는 임의의 이름으로 추가할 수 있습니다
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>연도 추가</Label>
+                    <Input
+                      type="number"
+                      placeholder="예: 2027"
+                      value={newDbYear}
+                      onChange={(e) => {
+                        setNewDbYear(e.target.value);
+                        setNewDbName("");
+                      }}
+                      data-testid="input-new-year"
+                    />
+                  </div>
+                  <div className="text-center text-muted-foreground">또는</div>
+                  <div className="space-y-2">
+                    <Label>임의 이름</Label>
+                    <Input
+                      placeholder="예: 특별 행사"
+                      value={newDbName}
+                      onChange={(e) => {
+                        setNewDbName(e.target.value);
+                        setNewDbYear("");
+                      }}
+                      data-testid="input-new-db-name"
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setAddDbOpen(false)}>
+                    취소
+                  </Button>
+                  <Button
+                    onClick={handleAddDatabase}
+                    disabled={!newDbYear && !newDbName.trim()}
+                    data-testid="button-confirm-add-db"
+                  >
+                    추가
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
+          <Link href="/input">
+            <Button className="gap-2" data-testid="button-add-transaction">
+              <PlusCircle className="w-4 h-4" />
+              거래 추가
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Summary Cards */}

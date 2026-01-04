@@ -28,12 +28,13 @@ export type Transaction = z.infer<typeof transactionSchema>;
 export const insertTransactionSchema = transactionSchema.omit({ id: true });
 export type InsertTransaction = z.infer<typeof insertTransactionSchema>;
 
-// Budget category
+// Budget category with date range
 export const budgetCategorySchema = z.object({
   id: z.string(),
   name: z.string().min(1, "Category name is required"),
   yearlyBudget: z.number().nonnegative("Budget must be non-negative"),
-  monthlyBudget: z.number().nonnegative("Budget must be non-negative").optional(),
+  startDate: z.string().optional(), // YYYY-MM-DD
+  endDate: z.string().optional(), // YYYY-MM-DD
 });
 
 export type BudgetCategory = z.infer<typeof budgetCategorySchema>;
@@ -41,22 +42,31 @@ export type BudgetCategory = z.infer<typeof budgetCategorySchema>;
 export const insertBudgetCategorySchema = budgetCategorySchema.omit({ id: true });
 export type InsertBudgetCategory = z.infer<typeof insertBudgetCategorySchema>;
 
-// Settings stored in settings.json
+// Database info (year-based or custom)
+export const databaseInfoSchema = z.object({
+  id: z.string(),
+  name: z.string(), // e.g., "2025", "2026", or custom name
+  isYear: z.boolean(), // true if this is a year-based database
+  year: z.number().optional(), // Only for year-based databases
+});
+
+export type DatabaseInfo = z.infer<typeof databaseInfoSchema>;
+
+// Settings stored per database
 export const settingsSchema = z.object({
   budgetCategories: z.array(budgetCategorySchema),
-  currentYear: z.number(),
+  fiscalYear: z.number().optional(), // For year databases
 });
 
 export type Settings = z.infer<typeof settingsSchema>;
 
-// GitHub configuration
-export const githubConfigSchema = z.object({
-  token: z.string().min(1, "Token is required"),
-  owner: z.string().min(1, "Repository owner is required"),
-  repo: z.string().min(1, "Repository name is required"),
+// App-wide configuration
+export const appConfigSchema = z.object({
+  databases: z.array(databaseInfoSchema),
+  currentDatabaseId: z.string(),
 });
 
-export type GitHubConfig = z.infer<typeof githubConfigSchema>;
+export type AppConfig = z.infer<typeof appConfigSchema>;
 
 // Monthly summary for dashboard
 export interface MonthlySummary {
