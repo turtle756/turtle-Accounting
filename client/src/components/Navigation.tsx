@@ -32,6 +32,11 @@ export function Navigation() {
   const [location] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  const isActive = (path: string) => {
+    if (path === "/") return location === "/" || location === "";
+    return location === path;
+  };
+
   return (
     <>
       {/* Desktop Navigation */}
@@ -47,28 +52,25 @@ export function Navigation() {
 
           {/* Nav Links */}
           <div className="flex items-center gap-1">
-            {NAV_ITEMS.map((item) => {
-              const isActive = location === item.path;
-              return (
-                <Link key={item.path} href={item.path}>
-                  <Button
-                    variant={isActive ? "secondary" : "ghost"}
-                    size="sm"
-                    className="gap-2"
-                    data-testid={`nav-${item.label}`}
-                  >
-                    <item.icon className="w-4 h-4" />
-                    {item.label}
-                  </Button>
-                </Link>
-              );
-            })}
+            {NAV_ITEMS.map((item) => (
+              <Link key={item.path} href={item.path}>
+                <Button
+                  variant={isActive(item.path) ? "secondary" : "ghost"}
+                  size="sm"
+                  className="gap-2"
+                  data-testid={`nav-${item.label}`}
+                >
+                  <item.icon className="w-4 h-4" />
+                  {item.label}
+                </Button>
+              </Link>
+            ))}
           </div>
 
           {/* Settings */}
           <Link href="/settings">
             <Button
-              variant={location === "/settings" ? "secondary" : "ghost"}
+              variant={isActive("/settings") ? "secondary" : "ghost"}
               size="icon"
               data-testid="nav-settings"
             >
@@ -103,32 +105,29 @@ export function Navigation() {
                 <SheetTitle>메뉴</SheetTitle>
               </SheetHeader>
               <div className="flex flex-col gap-2 mt-6">
-                {NAV_ITEMS.map((item) => {
-                  const isActive = location === item.path;
-                  return (
-                    <Link
-                      key={item.path}
-                      href={item.path}
-                      onClick={() => setMobileMenuOpen(false)}
+                {NAV_ITEMS.map((item) => (
+                  <Link
+                    key={item.path}
+                    href={item.path}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <Button
+                      variant={isActive(item.path) ? "secondary" : "ghost"}
+                      className="w-full justify-start gap-3"
+                      data-testid={`nav-mobile-${item.label}`}
                     >
-                      <Button
-                        variant={isActive ? "secondary" : "ghost"}
-                        className="w-full justify-start gap-3"
-                        data-testid={`nav-mobile-${item.label}`}
-                      >
-                        <item.icon className="w-5 h-5" />
-                        {item.label}
-                      </Button>
-                    </Link>
-                  );
-                })}
+                      <item.icon className="w-5 h-5" />
+                      {item.label}
+                    </Button>
+                  </Link>
+                ))}
                 <div className="border-t my-4" />
                 <Link
                   href="/settings"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   <Button
-                    variant={location === "/settings" ? "secondary" : "ghost"}
+                    variant={isActive("/settings") ? "secondary" : "ghost"}
                     className="w-full justify-start gap-3"
                     data-testid="nav-mobile-settings"
                   >
@@ -145,22 +144,19 @@ export function Navigation() {
       {/* Mobile Bottom Navigation */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-background border-t z-50 safe-area-inset-bottom">
         <div className="flex items-center justify-around h-full">
-          {[NAV_ITEMS[0], NAV_ITEMS[1], NAV_ITEMS[2], NAV_ITEMS[3], NAV_ITEMS[5]].map((item) => {
-            const isActive = location === item.path;
-            return (
-              <Link key={item.path} href={item.path} className="flex-1">
-                <div
-                  className={`flex flex-col items-center justify-center gap-1 py-2 ${
-                    isActive ? "text-primary" : "text-muted-foreground"
-                  }`}
-                  data-testid={`nav-bottom-${item.label}`}
-                >
-                  <item.icon className="w-5 h-5" />
-                  <span className="text-xs">{item.label}</span>
-                </div>
-              </Link>
-            );
-          })}
+          {[NAV_ITEMS[0], NAV_ITEMS[1], NAV_ITEMS[2], NAV_ITEMS[3], NAV_ITEMS[5]].map((item) => (
+            <Link key={item.path} href={item.path} className="flex-1">
+              <div
+                className={`flex flex-col items-center justify-center gap-1 py-2 ${
+                  isActive(item.path) ? "text-primary" : "text-muted-foreground"
+                }`}
+                data-testid={`nav-bottom-${item.label}`}
+              >
+                <item.icon className="w-5 h-5" />
+                <span className="text-xs">{item.label}</span>
+              </div>
+            </Link>
+          ))}
         </div>
       </nav>
 

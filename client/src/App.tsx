@@ -14,7 +14,7 @@ import Reports from "@/pages/Reports";
 import Settings from "@/pages/Settings";
 import NotFound from "@/pages/not-found";
 
-function Router() {
+function AppRoutes() {
   return (
     <Switch>
       <Route path="/" component={Dashboard} />
@@ -37,7 +37,7 @@ function App() {
           <div className="min-h-screen bg-background">
             <Navigation />
             <main className="pb-16 md:pb-0">
-              <Router />
+              <AppRoutes />
             </main>
           </div>
           <Toaster />
